@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Website Time Tracker</h1>
+    </header>
+    
+    <div class="tabs">
+      <button class="tab-button active" data-tab="time">Time Tracking</button>
+      <button class="tab-button" data-tab="heatmap">Eye Tracking</button>
+    </div>
+    
+    <!-- Time Tracking Tab -->
+    <div id="time-tab" class="tab-content active">
+      <div class="current-session">
+        <h3>Current Session</h3>
+        <div class="current-site">
+          <span class="site-name" id="current-site">Loading...</span>
+          <span class="time-display" id="current-time">00:00:00</span>
+        </div>
+      </div>
+      
+      <div class="daily-stats">
+        <h3>Today's Activity</h3>
+        <div class="stats-list" id="daily-stats">
+          <div class="loading">Loading statistics...</div>
+        </div>
+      </div>
+      
+      <div class="controls">
+        <button id="clear-data" class="button secondary">Clear Data</button>
+        <button id="export-data" class="button primary">Export Data</button>
+      </div>
+    </div>
+    
+    <!-- Heatmap Tab -->
+    <div id="heatmap-tab" class="tab-content">
+      <div class="heatmap-info">
+        <h3>Cursor Activity Heatmap</h3>
+        <p>Shows where your cursor spends the most time (proxy for eye tracking)</p>
+      </div>
+      
+      <div class="heatmap-stats">
+        <div class="stat-item">
+          <span class="stat-label">Data Points:</span>
+          <span class="stat-value" id="heatmap-points">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Most Active Area:</span>
+          <span class="stat-value" id="most-active-area">Center</span>
+        </div>
+      </div>
+      
+      <div class="heatmap-visualization">
+        <canvas id="heatmap-canvas" width="300" height="200"></canvas>
+      </div>
+      
+      <div class="heatmap-controls">
+        <button id="clear-heatmap" class="button secondary">Clear Heatmap</button>
+        <button id="export-heatmap" class="button primary">Export Heatmap</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
