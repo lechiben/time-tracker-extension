@@ -64,42 +64,42 @@ class PopupManager {
     });
   }
 
-  async loadData() {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: "GET_TIME_DATA",
+  loadData() {
+    chrome.runtime
+      .sendMessage({ type: "GET_TIME_DATA" })
+      .then((response) => {
+        this.displayTimeData(response);
+        this.updateCurrentSession();
+      })
+      .catch((error) => {
+        console.error("Error loading data:", error);
+        document.getElementById("daily-stats").innerHTML =
+          '<div class="loading">Error loading data</div>';
       });
-      this.displayTimeData(response);
-      this.updateCurrentSession();
-    } catch (error) {
-      console.error("Error loading data:", error);
-      document.getElementById("daily-stats").innerHTML =
-        '<div class="loading">Error loading data</div>';
-    }
   }
 
-  async updateCurrentSession() {
-    try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      if (!tab || tab.url.startsWith("chrome://")) {
-        document.getElementById("current-site").textContent =
-          "Chrome Internal Page";
+  updateCurrentSession() {
+    chrome.tabs
+      .query({ active: true, currentWindow: true })
+      .then((tabs) => {
+        const tab = tabs[0];
+        if (!tab || tab.url.startsWith("chrome://")) {
+          document.getElementById("current-site").textContent =
+            "Chrome Internal Page";
+          document.getElementById("current-time").textContent = "00:00:00";
+          return;
+        }
+
+        const domain = new URL(tab.url).hostname;
+        document.getElementById("current-site").textContent = domain;
+
+        // For real-time tracking, you'd need to implement this in background script
+        // For now, showing placeholder
         document.getElementById("current-time").textContent = "00:00:00";
-        return;
-      }
-
-      const domain = new URL(tab.url).hostname;
-      document.getElementById("current-site").textContent = domain;
-
-      // For real-time tracking, you'd need to implement this in background script
-      // For now, showing placeholder
-      document.getElementById("current-time").textContent = "00:00:00";
-    } catch (error) {
-      console.error("Error updating current session:", error);
-    }
+      })
+      .catch((error) => {
+        console.error("Error updating current session:", error);
+      });
   }
 
   displayTimeData(data) {

@@ -115,40 +115,44 @@ class CursorTracker {
     }
   }
 
-  async loadExistingData() {
-    try {
-      const result = await chrome.storage.local.get(["heatmapData"]);
-      if (result.heatmapData && result.heatmapData[this.domain]) {
-        // Load existing data for this domain
-        const existingData = result.heatmapData[this.domain];
-        // Only keep recent data (last 24 hours)
-        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-        this.heatmapData = existingData.filter(
-          (point) => point.timestamp > oneDayAgo
-        );
-      }
-    } catch (error) {
-      console.error("Error loading heatmap data:", error);
-    }
+  loadExistingData() {
+    chrome.storage.local
+      .get(["heatmapData"])
+      .then((result) => {
+        if (result.heatmapData && result.heatmapData[this.domain]) {
+          // Load existing data for this domain
+          const existingData = result.heatmapData[this.domain];
+          // Only keep recent data (last 24 hours)
+          const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+          this.heatmapData = existingData.filter(
+            (point) => point.timestamp > oneDayAgo
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading heatmap data:", error);
+      });
   }
 
-  async saveHeatmapData() {
-    try {
-      // Get existing data
-      const result = await chrome.storage.local.get(["heatmapData"]);
-      const allHeatmapData = result.heatmapData || {};
+  saveHeatmapData() {
+    // Get existing data first
+    chrome.storage.local
+      .get(["heatmapData"])
+      .then((result) => {
+        const allHeatmapData = result.heatmapData || {};
 
-      // Update data for current domain
-      allHeatmapData[this.domain] = this.heatmapData;
+        // Update data for current domain
+        allHeatmapData[this.domain] = this.heatmapData;
 
-      // Send to background script
-      chrome.runtime.sendMessage({
-        type: "SAVE_HEATMAP_DATA",
-        data: allHeatmapData,
+        // Send to background script
+        return chrome.runtime.sendMessage({
+          type: "SAVE_HEATMAP_DATA",
+          data: allHeatmapData,
+        });
+      })
+      .catch((error) => {
+        console.error("Error saving heatmap data:", error);
       });
-    } catch (error) {
-      console.error("Error saving heatmap data:", error);
-    }
   }
 
   // Method to generate heatmap visualization data

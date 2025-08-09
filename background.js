@@ -26,18 +26,17 @@ class TimeTracker {
     this.getCurrentActiveTab();
   }
 
-  async getCurrentActiveTab() {
-    try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
+  getCurrentActiveTab() {
+    chrome.tabs
+      .query({ active: true, currentWindow: true })
+      .then((tabs) => {
+        if (tabs && tabs.length > 0) {
+          this.startTracking(tabs[0].id, tabs[0].url);
+        }
+      })
+      .catch((error) => {
+        console.error("Error getting current active tab:", error);
       });
-      if (tab) {
-        this.startTracking(tab.id, tab.url);
-      }
-    } catch (error) {
-      console.error("Error getting current active tab:", error);
-    }
   }
 
   handleTabActivated(activeInfo) {
@@ -69,23 +68,24 @@ class TimeTracker {
     }
   }
 
-  async switchTab(tabId, url = null) {
+  switchTab(tabId, url = null) {
     // Stop tracking previous tab
     this.stopTracking();
 
     // Get tab info if URL not provided
     if (!url) {
-      try {
-        const tab = await chrome.tabs.get(tabId);
-        url = tab.url;
-      } catch (error) {
-        console.error("Error getting tab info:", error);
-        return;
-      }
+      chrome.tabs
+        .get(tabId)
+        .then((tab) => {
+          this.startTracking(tabId, tab.url);
+        })
+        .catch((error) => {
+          console.error("Error getting tab info:", error);
+        });
+    } else {
+      // Start tracking new tab
+      this.startTracking(tabId, url);
     }
-
-    // Start tracking new tab
-    this.startTracking(tabId, url);
   }
 
   startTracking(tabId, url) {
@@ -141,28 +141,31 @@ class TimeTracker {
     }
   }
 
-  async saveTabData() {
-    try {
-      // Convert Map to Object for storage
-      const dataToSave = {};
-      for (const [tabId, data] of this.tabData) {
-        dataToSave[tabId] = data;
-      }
-
-      await chrome.storage.local.set({ tabData: dataToSave });
-    } catch (error) {
-      console.error("Error saving tab data:", error);
+  saveTabData() {
+    // Convert Map to Object for storage
+    const dataToSave = {};
+    for (const [tabId, data] of this.tabData) {
+      dataToSave[tabId] = data;
     }
+
+    chrome.storage.local
+      .set({ tabData: dataToSave })
+      .then(() => {
+        // Data saved successfully
+      })
+      .catch((error) => {
+        console.error("Error saving tab data:", error);
+      });
   }
 
-  async getStoredData() {
-    try {
-      const result = await chrome.storage.local.get(["tabData", "heatmapData"]);
-      return result;
-    } catch (error) {
-      console.error("Error getting stored data:", error);
-      return {};
-    }
+  getStoredData() {
+    return chrome.storage.local
+      .get(["tabData", "heatmapData"])
+      .then((result) => result)
+      .catch((error) => {
+        console.error("Error getting stored data:", error);
+        return {};
+      });
   }
 }
 
@@ -172,9 +175,15 @@ const timeTracker = new TimeTracker();
 // Handle messages from content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "GET_TIME_DATA") {
-    timeTracker.getStoredData().then((data) => {
-      sendResponse(data);
-    });
+    timeTracker
+      .getStoredData()
+      .then((data) => {
+        sendResponse(data);
+      })
+      .catch((error) => {
+        console.error("Error in GET_TIME_DATA:", error);
+        sendResponse({});
+      });
     return true; // Keep message channel open for async response
   }
 
@@ -185,6 +194,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       .then(() => {
         sendResponse({ success: true });
+      })
+      .catch((error) => {
+        console.error("Error saving heatmap data:", error);
+        sendResponse({ success: false, error: error.message });
       });
     return true;
   }
